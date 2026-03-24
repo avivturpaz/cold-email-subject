@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Cold Email Subject Tester{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      Cold email subject line tester
+    </div>
+    <h1>Test five subject lines before you hit send.</h1>
+    <p class="lede">
+      Score each variant for length, personalization, urgency, and spam risk, then see a predicted open rate so you can ship the strongest opener.
+    </p>
+    <div class="hero-actions">
+      <a href="#tester" class="button button-primary">Score subject lines</a>
+      <a href="{{ url_for('pay') }}" class="button button-buy">Buy now</a>
+      <a href="#how-it-works" class="button button-secondary">See scoring rules</a>
+    </div>
+    <dl class="hero-stats">
+      <div>
+        <dt>Inputs</dt>
+        <dd>5 subject lines</dd>
+      </div>
+      <div>
+        <dt>Signals</dt>
+        <dd>4 scoring factors</dd>
+      </div>
+      <div>
+        <dt>Output</dt>
+        <dd>Predicted open rate</dd>
+      </div>
+    </dl>
+  </div>
+  <aside class="hero-panel" id="how-it-works">
+    <div class="panel-card">
+      <div class="panel-label">Scoring model</div>
+      <ul class="rule-list">
+        <li>Length favors concise lines around inbox-friendly length.</li>
+        <li>Personalization boosts lines that speak directly to the reader.</li>
+        <li>Urgency lifts time-sensitive wording without sounding pushy.</li>
+        <li>Spam risk rises with hype, caps, symbols, and trigger words.</li>
+      </ul>
+    </div>
+    <div class="panel-card accent">
+      <div class="panel-label">Best use case</div>
+      <p>Compare draft variations in one pass and choose the line most likely to earn a first open.</p>
+    </div>
+  </aside>
+</section>
+
+<section class="workspace" id="tester">
+  <div class="card form-card">
+    <div class="section-head">
+      <div>
+        <h2>Enter five variants</h2>
+        <p>Keep them short, distinct, and ready to compare.</p>
+      </div>
+      <button type="button" class="ghost-button" id="fill-sample">Use sample set</button>
+    </div>
+
+    <form id="subject-form" action="{{ url_for('submit') }}" method="post">
+      <div class="input-grid">
+        <label class="field">
+          <span>Variant 1</span>
+          <input type="text" name="subject_1" maxlength="120" placeholder="Quick question about {{ '{{first_name}}' }}">
+        </label>
+        <label class="field">
+          <span>Variant 2</span>
+          <input type="text" name="subject_2" maxlength="120" placeholder="Worth a look for {{ '{{company}}' }}?">
+        </label>
+        <label class="field">
+          <span>Variant 3</span>
+          <input type="text" name="subject_3" maxlength="120" placeholder="A faster way to handle this">
+        </label>
+        <label class="field">
+          <span>Variant 4</span>
+          <input type="text" name="subject_4" maxlength="120" placeholder="Last chance to lock in this week">
+        </label>
+        <label class="field">
+          <span>Variant 5</span>
+          <input type="text" name="subject_5" maxlength="120" placeholder="Thought this might help your team">
+        </label>
+      </div>
+
+      <div class="form-footer">
+        <p class="hint">The tool stores each test locally in SQLite so you can review recent runs later.</p>
+        <button type="submit" class="button button-primary">Analyze subjects</button>
+      </div>
+      <div class="form-status" id="form-status" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <div class="card results-card">
+    <div class="section-head">
+      <div>
+        <h2>Results</h2>
+        <p>Scores update as soon as the test runs.</p>
+      </div>
+      <div class="metric-pill" id="best-open-pill">No test yet</div>
+    </div>
+
+    <div id="results-empty" class="empty-state">
+      <div class="empty-kicker">Ready when you are</div>
+      <h3>Submit five subject lines to see the strongest opener.</h3>
+      <p>You'll get a score breakdown for each variant plus a predicted open rate for the best one.</p>
+    </div>
+
+    <div id="results-list" class="results-list" hidden></div>
+  </div>
+</section>
+
+<section class="card history-card">
+  <div class="section-head">
+    <div>
+      <h2>Recent tests</h2>
+      <p>Last 8 analyses saved on this machine.</p>
+    </div>
+  </div>
+
+  {% if recent_tests %}
+  <div class="history-list">
+    {% for test in recent_tests %}
+    <article class="history-row">
+      <div>
+        <div class="history-label">Best subject</div>
+        <div class="history-subject">{{ test.best_subject }}</div>
+      </div>
+      <div class="history-meta">
+        <span class="metric-pill">Variant {{ test.best_index }}</span>
+        <span class="metric-pill metric-pill-strong">{{ test.best_open_rate }}% open rate</span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-history">No saved tests yet.</div>
+  {% endif %}
+</section>
+{% endblock %}

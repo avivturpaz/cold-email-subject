@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Cold Email Subject Tester{% endblock %}</title>
+  <meta name="description" content="Score five cold email subject line variants for length, personalization, urgency, spam risk, and predicted open rate.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="page-sheen"></div>
+  <div class="page-grid"></div>
+  <main class="shell">
+    {% block content %}{% endblock %}
+  </main>
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
