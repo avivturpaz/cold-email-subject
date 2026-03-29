@@ -75,26 +75,34 @@ PERSONALIZATION_TERMS = {
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=1.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA busy_timeout = 1000")
+    except sqlite3.Error as exc:
+        app.logger.error("failed to configure sqlite busy timeout error=%s", exc)
     return conn
 
 
 def init_db():
-    with get_db() as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS subject_tests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                subjects_json TEXT NOT NULL,
-                results_json TEXT NOT NULL,
-                best_index INTEGER NOT NULL,
-                best_subject TEXT NOT NULL,
-                best_open_rate REAL NOT NULL,
-                created_at TEXT NOT NULL
+    try:
+        with get_db() as conn:
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS subject_tests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    subjects_json TEXT NOT NULL,
+                    results_json TEXT NOT NULL,
+                    best_index INTEGER NOT NULL,
+                    best_subject TEXT NOT NULL,
+                    best_open_rate REAL NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
+    except sqlite3.Error as exc:
+        app.logger.error("database initialization failed error=%s", exc)
 
 
 def json_error(message: str, status: int = 400):
@@ -282,42 +290,50 @@ def analyze_subjects(subjects: list[str]) -> dict[str, Any]:
 
 
 def save_test(subjects: list[str], analysis: dict[str, Any]) -> int:
-    with get_db() as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO subject_tests (
-                subjects_json,
-                results_json,
-                best_index,
-                best_subject,
-                best_open_rate,
-                created_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                json.dumps(subjects),
-                json.dumps(analysis["results"]),
-                analysis["best_index"],
-                analysis["best_subject"],
-                analysis["best_open_rate"],
-                datetime.now(timezone.utc).isoformat(),
-            ),
-        )
-        return int(cursor.lastrowid)
+    try:
+        with get_db() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO subject_tests (
+                    subjects_json,
+                    results_json,
+                    best_index,
+                    best_subject,
+                    best_open_rate,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    json.dumps(subjects),
+                    json.dumps(analysis["results"]),
+                    analysis["best_index"],
+                    analysis["best_subject"],
+                    analysis["best_open_rate"],
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+            return int(cursor.lastrowid)
+    except sqlite3.Error as exc:
+        app.logger.error("failed to save subject test error=%s", exc)
+        return -1
 
 
 def fetch_recent_tests(limit: int = 8) -> list[dict[str, Any]]:
-    with get_db() as conn:
-        rows = conn.execute(
-            """
-            SELECT id, best_subject, best_open_rate, best_index, created_at
-            FROM subject_tests
-            ORDER BY id DESC
-            LIMIT ?
-            """,
-            (limit,),
-        ).fetchall()
-    return [dict(row) for row in rows]
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, best_subject, best_open_rate, best_index, created_at
+                FROM subject_tests
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+    except sqlite3.Error as exc:
+        app.logger.error("failed to fetch recent tests error=%s", exc)
+        return []
 
 
 @app.route("/health")
