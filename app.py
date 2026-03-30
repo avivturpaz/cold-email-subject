@@ -381,6 +381,34 @@ def submit():
         return json_error("Unable to score subject lines right now.", 500)
 
 
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    try:
+        data = request.get_json(silent=True) or {}
+        if data.get("type") == "order.created":
+            order = data.get("data", {})
+            polar_order_id = order.get("id", "")
+            product_id = (order.get("product") or {}).get("id", "")
+            amount = (order.get("amount") or 0) / 100.0
+            currency = (order.get("currency") or "usd").upper()
+            customer_email = (order.get("customer") or {}).get("email", "")
+            try:
+                import sqlite3 as _sqlite3
+                _db = os.path.join(os.path.dirname(__file__), "..", "..", "data", "venture.db")
+                _conn = _sqlite3.connect(_db)
+                _conn.execute(
+                    "INSERT OR IGNORE INTO revenue (product, polar_product_id, amount, currency, customer_email, polar_order_id) VALUES (?, ?, ?, ?, ?, ?)",
+                    ("cold-email-subject", product_id, amount, currency, customer_email, polar_order_id),
+                )
+                _conn.commit()
+                _conn.close()
+            except Exception as exc:
+                app.logger.error("webhook db error: %s", exc)
+    except Exception as exc:
+        app.logger.error("webhook error: %s", exc)
+    return jsonify({"ok": True}), 200
+
+
 @app.route("/pay")
 def pay():
     checkout_url = f"https://buy.polar.sh/{POLAR_PRODUCT_ID}"
