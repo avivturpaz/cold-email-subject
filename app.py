@@ -346,6 +346,7 @@ def index():
     return render_template(
         "index.html",
         recent_tests=fetch_recent_tests(),
+        plausible_domain=os.environ.get("PLAUSIBLE_DOMAIN", ""),
     )
 
 
