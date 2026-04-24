@@ -5,9 +5,14 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 from flask import Flask, jsonify, redirect, render_template, request
 from werkzeug.exceptions import HTTPException
 
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+if SENTRY_DSN:
+    sentry_sdk.init(dsn=SENTRY_DSN, integrations=[FlaskIntegration()], traces_sample_rate=0.1)
 
 required = ["POLAR_PRODUCT_ID", "APP_SECRET_KEY"]
 missing = [v for v in required if not os.environ.get(v)]
